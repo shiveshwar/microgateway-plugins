@@ -9,6 +9,32 @@ const coreObject = require('./microgateway-core');
 const logger = coreObject.logger;
 const stats = coreObject.stats;
 
+var slash = {
+  "verify_api_key_url": "https://emg-test.apigee.net/edgemicro-auth/verifyApiKey",
+  "product_to_proxy": { "EdgeMicroTestProduct": ["edgemicro_weather"] },
+  "product_to_api_resource": { "EdgeMicroTestProduct": ["/"] }
+};
+var slashstar = {
+  "verify_api_key_url": "https://emg-test.apigee.net/edgemicro-auth/verifyApiKey",
+  "product_to_proxy": { "EdgeMicroTestProduct": ["edgemicro_weather"] },
+  "product_to_api_resource": { "EdgeMicroTestProduct": ["/*"] }
+};
+var slashstarstar = {
+  "verify_api_key_url": "https://emg-test.apigee.net/edgemicro-auth/verifyApiKey",
+  "product_to_proxy": { "EdgeMicroTestProduct": ["edgemicro_weather"] },
+  "product_to_api_resource": { "EdgeMicroTestProduct": ["/**"] }
+};
+
+var slashstarstar2 = {
+  "verify_api_key_url": "https://emg-test.apigee.net/edgemicro-auth/verifyApiKey",
+  "product_to_proxy": { "EdgeMicroTestProduct": ["edgemicro_weather"] },
+  "product_to_api_resource": { "EdgeMicroTestProduct": ["/*/2/**"] }
+};
+
+var proxy = { name: 'edgemicro_weather', base_path: '/weatherapikey' }
+
+var token = { api_product_list: ['EdgeMicroTestProduct'] }
+
 var oauthConfiigDefaults = {
   "authorization-header" : "authorization",
   "api-key-header" : 'x-api-key',
@@ -176,6 +202,99 @@ describe('oauth plugin', function() {
       done()
     }
 
+  })
+
+  // check for / resource path.
+
+  it('checkIfAuthorized for /', function (done) {
+    var contains;
+    contains = oauth.checkIfAuthorized(slash, '/weatherapikey', proxy, token);  
+    assert(contains)
+    contains = oauth.checkIfAuthorized(slash, '/weatherapikey/', proxy, token);
+    assert(contains)
+    contains = oauth.checkIfAuthorized(slash, '/weatherapikey/1', proxy, token);
+    assert(contains)
+    contains = oauth.checkIfAuthorized(slash, '/weatherapikey/1/', proxy, token);
+    assert(contains)
+    contains = oauth.checkIfAuthorized(slash, '/weatherapikey/1/2', proxy, token);
+    assert(contains)
+    contains = oauth.checkIfAuthorized(slash, '/weatherapikey/1/2/', proxy, token);
+    assert(contains)
+    contains = oauth.checkIfAuthorized(slash, '/weatherapikey/1/2/3/', proxy, token);
+    assert(contains)
+    contains = oauth.checkIfAuthorized(slash, '/weatherapikey/1/a/2/3/', proxy, token);
+    assert(contains)
+    done()
+  })
+
+   // check for /* resource path.
+
+  it('checkIfAuthorized for /*', function (done) {
+    var contains;
+     contains = oauth.checkIfAuthorized(slashstar, '/weatherapikey', proxy, token);  
+    assert(!contains)
+    contains = oauth.checkIfAuthorized(slashstar, '/weatherapikey/', proxy, token);
+    assert(!contains)
+    contains = oauth.checkIfAuthorized(slashstar, '/weatherapikey/1', proxy, token);
+    assert(contains)
+    contains = oauth.checkIfAuthorized(slashstar, '/weatherapikey/1/', proxy, token);
+    assert(contains)
+    contains = oauth.checkIfAuthorized(slashstar, '/weatherapikey/1/2', proxy, token);
+    assert(!contains)
+    contains = oauth.checkIfAuthorized(slashstar, '/weatherapikey/1/2/', proxy, token);
+    assert(!contains)
+    contains = oauth.checkIfAuthorized(slashstar, '/weatherapikey/1/2/3/', proxy, token);
+    assert(!contains)
+    contains = oauth.checkIfAuthorized(slashstar, '/weatherapikey/1/a/2/3/', proxy, token);
+    assert(!contains)
+    done()
+  })
+  
+   // check for /** resource path.
+
+  it('checkIfAuthorized for /**', function (done) {
+    var contains;
+   contains = oauth.checkIfAuthorized(slashstarstar, '/weatherapikey', proxy, token);  
+    assert(!contains)
+    contains = oauth.checkIfAuthorized(slashstarstar, '/weatherapikey/', proxy, token);
+    assert(!contains)
+    contains = oauth.checkIfAuthorized(slashstarstar, '/weatherapikey/1', proxy, token);
+    assert(contains)
+    contains = oauth.checkIfAuthorized(slashstarstar, '/weatherapikey/1/', proxy, token);
+    assert(contains)
+    contains = oauth.checkIfAuthorized(slashstarstar, '/weatherapikey/1/2', proxy, token);
+    assert(contains)
+    contains = oauth.checkIfAuthorized(slashstarstar, '/weatherapikey/1/2/', proxy, token);
+    assert(contains)
+    contains = oauth.checkIfAuthorized(slashstarstar, '/weatherapikey/1/2/3/', proxy, token);
+    assert(contains)
+    contains = oauth.checkIfAuthorized(slashstarstar, '/weatherapikey/1/a/2/3/', proxy, token);
+    assert(contains)
+    done()
+
+  })
+
+   // check for /*/2/** resource path.
+
+  it('checkIfAuthorized for  /*/2/**  ', function (done) {
+    var contains;
+    contains = oauth.checkIfAuthorized(slashstarstar2, '/weatherapikey', proxy, token);  
+    assert(!contains)
+    contains = oauth.checkIfAuthorized(slashstarstar2, '/weatherapikey/', proxy, token);
+    assert(!contains)
+    contains = oauth.checkIfAuthorized(slashstarstar2, '/weatherapikey/1', proxy, token);
+    assert(!contains)
+    contains = oauth.checkIfAuthorized(slashstarstar2, '/weatherapikey/1/', proxy, token);
+    assert(!contains)
+    contains = oauth.checkIfAuthorized(slashstarstar2, '/weatherapikey/1/2', proxy, token);
+    assert(!contains)
+    contains = oauth.checkIfAuthorized(slashstarstar2, '/weatherapikey/1/2/', proxy, token);
+    assert(contains)
+    contains = oauth.checkIfAuthorized(slashstarstar2, '/weatherapikey/1/2/3/', proxy, token);
+    assert(contains)
+    contains = oauth.checkIfAuthorized(slashstarstar2, '/weatherapikey/1/a/2/3/', proxy, token);
+    assert(!contains)
+    done()
   })
 
   // should be identical for these tests
