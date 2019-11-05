@@ -25,12 +25,6 @@ var patternSlashDoubleStar = {
   "product_to_api_resource": { "EdgeMicroTestProduct": ["/**"] }
 };
 
-var patternSlashDoubleStar2 = {
-  "verify_api_key_url": "https://emg-test.apigee.net/edgemicro-auth/verifyApiKey",
-  "product_to_proxy": { "EdgeMicroTestProduct": ["edgemicro_weather"] },
-  "product_to_api_resource": { "EdgeMicroTestProduct": ["/*/2/**"] }
-};
-
 var proxy = { name: 'edgemicro_weather', base_path: '/weatherapikey' }
 
 var token = { api_product_list: ['EdgeMicroTestProduct'] }
@@ -272,29 +266,6 @@ describe('oauth plugin', function() {
     assert(contains)
     done()
 
-  })
-
-   // check for /*/2/** resource path.
-
-  it('checkIfAuthorized for  /*/2/**  ', function (done) {
-    var contains;
-    contains = oauth.checkIfAuthorized(patternSlashDoubleStar2, '/weatherapikey', proxy, token);  
-    assert(!contains)
-    contains = oauth.checkIfAuthorized(patternSlashDoubleStar2, '/weatherapikey/', proxy, token);
-    assert(!contains)
-    contains = oauth.checkIfAuthorized(patternSlashDoubleStar2, '/weatherapikey/1', proxy, token);
-    assert(!contains)
-    contains = oauth.checkIfAuthorized(patternSlashDoubleStar2, '/weatherapikey/1/', proxy, token);
-    assert(!contains)
-    contains = oauth.checkIfAuthorized(patternSlashDoubleStar2, '/weatherapikey/1/2', proxy, token);
-    assert(!contains)
-    contains = oauth.checkIfAuthorized(patternSlashDoubleStar2, '/weatherapikey/1/2/', proxy, token);
-    assert(contains)
-    contains = oauth.checkIfAuthorized(patternSlashDoubleStar2, '/weatherapikey/1/2/3/', proxy, token);
-    assert(contains)
-    contains = oauth.checkIfAuthorized(patternSlashDoubleStar2, '/weatherapikey/1/a/2/3/', proxy, token);
-    assert(!contains)
-    done()
   })
 
   // should be identical for these tests
