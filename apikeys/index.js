@@ -27,17 +27,17 @@ var cacheKey = false;
 const LOG_TAG_COMP = 'apikeys';
 const CONSOLE_LOG_TAG_COMP = 'microgateway-plugins apikeys';
 
-module.exports.init = function(config, logger, stats) {
+module.exports.init = function (config, logger, stats) {
 
     var request = config.request ? requestLib.defaults(config.request) : requestLib;
     var keys = config.jwk_keys ? JSON.parse(config.jwk_keys) : null;
 
-    var middleware = function(req, res, next) {
+    var middleware = function (req, res, next) {
 
         var apiKeyHeaderName = config.hasOwnProperty("api-key-header") ? config["api-key-header"] : "x-api-key";
-		//set to true retain the api key
-		var keepApiKey = config.hasOwnProperty('keep-api-key') ? config['keep-api-key'] : false;
-		//cache api keys
+        //set to true retain the api key
+        var keepApiKey = config.hasOwnProperty('keep-api-key') ? config['keep-api-key'] : false;
+        //cache api keys
         cacheKey = config.hasOwnProperty("cacheKey") ? config.cacheKey : false;
         //set grace period
         var gracePeriod = config.hasOwnProperty("gracePeriod") ? config.gracePeriod : 0;
@@ -49,14 +49,14 @@ module.exports.init = function(config, logger, stats) {
         //if local proxy is set, ignore proxies
         if (process.env.EDGEMICRO_LOCAL_PROXY === "1") {
             productOnly = true;
-        }        
+        }
 
         //leaving rest of the code same to ensure backward compatibility
         apiKey = req.headers[apiKeyHeaderName]
-        if ( apiKey ) {
-			if (!keepApiKey) {
-				delete(req.headers[apiKeyHeaderName]); // don't pass this header to target
-			}
+        if (apiKey) {
+            if (!keepApiKey) {
+                delete (req.headers[apiKeyHeaderName]); // don't pass this header to target
+            }
             exchangeApiKeyForToken(req, res, next, config, logger, stats, middleware, apiKey);
         } else if (req.reqUrl && req.reqUrl.query && (apiKey = req.reqUrl.query[apiKeyHeaderName])) {
             exchangeApiKeyForToken(req, res, next, config, logger, stats, middleware, apiKey);
@@ -70,10 +70,10 @@ module.exports.init = function(config, logger, stats) {
         }
     }
 
-    var exchangeApiKeyForToken = function(req, res, next, config, logger, stats, middleware, apiKey) {
+    var exchangeApiKeyForToken = function (req, res, next, config, logger, stats, middleware, apiKey) {
         var cacheControl = req.headers["cache-control"] || 'no-cache';
         if (cacheKey || (cacheControl && cacheControl.indexOf("no-cache") < 0)) { // caching is allowed
-            cache.read(apiKey, function(err, value) {
+            cache.read(apiKey, function (err, value) {
                 if (value) {
                     if (Date.now() / 1000 < value.exp) { // not expired yet (token expiration is in seconds)
                         debug("api key cache hit", apiKey);
@@ -109,14 +109,14 @@ module.exports.init = function(config, logger, stats) {
             }
         };
 
-        if( config.key && config.secret) {
-            api_key_options['auth']= {
-              user: config.key,
-              pass: config.secret,
-              sendImmediately: true
+        if (config.key && config.secret) {
+            api_key_options['auth'] = {
+                user: config.key,
+                pass: config.secret,
+                sendImmediately: true
             }
         }
-        
+
         if (config.agentOptions) {
             if (config.agentOptions.requestCert) {
                 api_key_options.requestCert = true;
@@ -127,9 +127,9 @@ module.exports.init = function(config, logger, stats) {
                         if (config.agentOptions.ca) api_key_options.ca = fs.readFileSync(path.resolve(config.agentOptions.ca), "utf8");
                     } else if (config.agentOptions.pfx) {
                         api_key_options.pfx = fs.readFileSync(path.resolve(config.agentOptions.pfx));
-                    }    
+                    }
                 } catch (e) {
-                    logger.consoleLog('warn', {component: CONSOLE_LOG_TAG_COMP}, "apikeys plugin could not load key file");
+                    logger.consoleLog('warn', { component: CONSOLE_LOG_TAG_COMP }, "apikeys plugin could not load key file");
                 }
                 if (config.agentOptions.rejectUnauthorized) {
                     api_key_options.rejectUnauthorized = true;
@@ -144,32 +144,32 @@ module.exports.init = function(config, logger, stats) {
             }
         }
         debug(api_key_options);
-        request(api_key_options, function(err, response, body) {
+        request(api_key_options, function (err, response, body) {
             if (err) {
                 debug("verify apikey gateway timeout");
                 return sendError(req, res, next, logger, stats, "gateway_timeout", err.message);
             }
             if (response.statusCode !== 200) {
-				if (config.allowInvalidAuthorization) {
-                    logger.eventLog({level:'warn', req: req, res: res, err:err, component:LOG_TAG_COMP }, "ignoring err in requestApiKeyJWT");
-					return next();
-				} else {
-	                debug("verify apikey access_denied");
-	                return sendError(req, res, next, logger, stats, "access_denied", response.statusMessage);
-				}
+                if (config.allowInvalidAuthorization) {
+                    logger.eventLog({ level: 'warn', req: req, res: res, err: err, component: LOG_TAG_COMP }, "ignoring err in requestApiKeyJWT");
+                    return next();
+                } else {
+                    debug("verify apikey access_denied");
+                    return sendError(req, res, next, logger, stats, "access_denied", response.statusMessage);
+                }
             }
             verify(body, config, logger, stats, middleware, req, res, next, apiKey);
         });
     }
 
-    var verify = function(token, config, logger, stats, middleware, req, res, next, apiKey) {
+    var verify = function (token, config, logger, stats, middleware, req, res, next, apiKey) {
 
         var isValid = false;
         var oauthtoken = token && token.token ? token.token : token;
         var decodedToken = {}
         try {
             decodedToken = JWS.parse(oauthtoken);
-        } catch(e) {
+        } catch (e) {
             return sendError(req, res, next, logger, stats, "access_denied", 'apikeys plugin failed to parse token in verify');
         }
         debug(decodedToken)
@@ -179,7 +179,7 @@ module.exports.init = function(config, logger, stats) {
             try {
                 isValid = JWS.verifyJWT(oauthtoken, pem, acceptField);
             } catch (error) {
-                logger.consoleLog('warn', {component: CONSOLE_LOG_TAG_COMP}, 'error parsing jwt: ' + oauthtoken);
+                logger.consoleLog('warn', { component: CONSOLE_LOG_TAG_COMP }, 'error parsing jwt: ' + oauthtoken);
             }
         } else {
             debug("validating jwt");
@@ -187,12 +187,12 @@ module.exports.init = function(config, logger, stats) {
             try {
                 isValid = JWS.verifyJWT(oauthtoken, config.public_key, acceptField);
             } catch (error) {
-                logger.consoleLog('warn', {component: CONSOLE_LOG_TAG_COMP}, 'error parsing jwt: ' + oauthtoken);
+                logger.consoleLog('warn', { component: CONSOLE_LOG_TAG_COMP }, 'error parsing jwt: ' + oauthtoken);
             }
         }
         if (!isValid) {
             if (config.allowInvalidAuthorization) {
-                logger.eventLog({level:'warn', req: req, res: res, err:null, component:LOG_TAG_COMP }, "ignoring err in verify");
+                logger.eventLog({ level: 'warn', req: req, res: res, err: null, component: LOG_TAG_COMP }, "ignoring err in verify");
                 return next();
             } else {
                 debug("invalid token");
@@ -205,9 +205,9 @@ module.exports.init = function(config, logger, stats) {
 
     return {
 
-        onrequest: function(req, res, next) {
+        onrequest: function (req, res, next) {
             if (process.env.EDGEMICRO_LOCAL === "1") {
-                debug ("MG running in local mode. Skipping OAuth");
+                debug("MG running in local mode. Skipping OAuth");
                 next();
             } else {
                 middleware(req, res, next);
@@ -247,59 +247,51 @@ module.exports.init = function(config, logger, stats) {
 const checkIfAuthorized = module.exports.checkIfAuthorized = function checkIfAuthorized(config, urlPath, proxy, decodedToken) {
 
     var parsedUrl = url.parse(urlPath);
-    //
-    debug("product only: " + productOnly);
-    //
-
+    debug('product only: ' + productOnly);
     if (!decodedToken.api_product_list) {
-        debug("no api product list");
+        debug('no api product list');
         return false;
     }
 
-    return decodedToken.api_product_list.some(function(product) {
+    return decodedToken.api_product_list.some(function (product) {
 
         const validProxyNames = config.product_to_proxy[product];
 
         if (!productOnly) {
             if (!validProxyNames) {
-                debug("no proxies found for product");
+                debug('no proxies found for product');
                 return false;
             }
         }
 
-
         const apiproxies = config.product_to_api_resource[product];
-
         var matchesProxyRules = false;
         if (apiproxies && apiproxies.length) {
-            apiproxies.forEach(function(tempApiProxy) {
+            apiproxies.forEach(function (tempApiProxy) {
                 if (matchesProxyRules) {
                     //found one
-                    debug("found matching proxy rule");
+                    debug('found matching proxy rule');
                     return;
                 }
-
-                urlPath = parsedUrl.pathname;
-                const apiproxy = tempApiProxy.includes(proxy.base_path) ?
-                    tempApiProxy :
-                    proxy.base_path + (tempApiProxy.startsWith("/") ? "" : "/") + tempApiProxy
-                if (apiproxy.endsWith("/") && !urlPath.endsWith("/")) {
-                    urlPath = urlPath + "/";
-                }
-
-                if (apiproxy.includes(SUPPORTED_DOUBLE_ASTERIK_PATTERN)) {
-                    const regex = apiproxy.replace(/\*\*/gi, ".*")
-                    matchesProxyRules = urlPath.match(regex)
+                if (tempApiProxy === SUPPORTED_SINGLE_FORWARD_SLASH_PATTERN) {
+                    matchesProxyRules = true
                 } else {
-                    if (apiproxy.includes(SUPPORTED_SINGLE_ASTERIK_PATTERN)) {
-                        const regex = apiproxy.replace(/\*/gi, "[^/]+");
-                        matchesProxyRules = urlPath.match(regex)
-                    } else {
-                        // if(apiproxy.includes(SUPPORTED_SINGLE_FORWARD_SLASH_PATTERN)){
-                        // }
-                        matchesProxyRules = urlPath === apiproxy;
 
+                    urlPath = parsedUrl.pathname;
+                    const apiproxy = tempApiProxy.includes(proxy.base_path) ?
+                        tempApiProxy :
+                        proxy.base_path + (tempApiProxy.startsWith("/") ? "" : "/") + tempApiProxy
+                    if (apiproxy.endsWith("/") && !urlPath.endsWith("/")) {
+                        urlPath = urlPath + "/";
                     }
+                    const proxyRegEx = new RegExp(`^${proxy.base_path
+                        .replace(/\//g, '\\/')}${tempApiProxy
+                            .replace(/(\w+)\/\*\*/g, '$1/.*')
+                            .replace(/\/\*\*/g, '/\\w+.*')
+                            .replace(/\"/, '')
+                            .replace(/\//g, '\\/')
+                            .replace(/\/\*(.*?)(?=\/|$)/g, '\/\\w+\\/*')}$`, 'ig');
+                    matchesProxyRules = urlPath.match(proxyRegEx);
                 }
             })
 
@@ -328,13 +320,13 @@ function getPEM(decodedToken, keys) {
     return rs.KEYUTIL.getPEM(publickey);
 }
 
-function setResponseCode(res,code) {
-    switch ( code ) {
+function setResponseCode(res, code) {
+    switch (code) {
         case 'invalid_request': {
             res.statusCode = 400;
             break;
         }
-        case 'access_denied':{
+        case 'access_denied': {
             res.statusCode = 403;
             break;
         }
@@ -358,7 +350,7 @@ function setResponseCode(res,code) {
 
 function sendError(req, res, next, logger, stats, code, message) {
 
-    setResponseCode(res,code)
+    setResponseCode(res, code)
 
     var response = {
         error: code,
@@ -367,14 +359,14 @@ function sendError(req, res, next, logger, stats, code, message) {
 
     debug("auth failure", res.statusCode, code, message ? message : "", req.headers, req.method, req.url);
     const err = Error('auth failure');
-    logger.eventLog({level:'error', req: req, res: res, err:err, component:LOG_TAG_COMP }, message);
+    logger.eventLog({ level: 'error', req: req, res: res, err: err, component: LOG_TAG_COMP }, message);
 
     //opentracing
     if (process.env.EDGEMICRO_OPENTRACE) {
         try {
             const traceHelper = require('../microgateway-core/lib/trace-helper');
-            traceHelper.setChildErrorSpan('apikeys', req.headers);        
-        } catch (err) {}
+            traceHelper.setChildErrorSpan('apikeys', req.headers);
+        } catch (err) { }
     }
     //
 
