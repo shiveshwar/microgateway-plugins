@@ -10,13 +10,10 @@ const proxy = { name: apiProd, base_path: '/v1/weatheer' }
 const token = { api_product_list: [apiName] }
 
 function* testConfig() {
-    let i = 0; while (i < 4) {
-        i++; yield {
-            "product_to_proxy": [apiProd],
-            "product_to_api_resource": {}
-        }
-    }
-}
+    let i =0; while ( i<5 ) {  i++; yield {  
+      "product_to_proxy": [apiProd],
+      "product_to_api_resource": {} 
+}}}
 
 var [slash, slashstar, slashstarstar, slashstarstar2, customPatternTest] = [...testConfig()];
 slash.product_to_api_resource[apiName] = ["/"];
@@ -149,5 +146,4 @@ describe('apikey plugin', function () {
    done()
   })
 
-}
 }); 

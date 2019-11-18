@@ -12,9 +12,7 @@ var requestLib = require("request");
 var _ = require("lodash");
 
 const PRIVATE_JWT_VALUES = ["application_name", "client_id", "api_product_list", "iat", "exp"];
-const SUPPORTED_DOUBLE_ASTERIK_PATTERN = "**";
-const SUPPORTED_SINGLE_ASTERIK_PATTERN = "*";
-// const SUPPORTED_SINGLE_FORWARD_SLASH_PATTERN = "/";    // ?? this has yet to be used in any module.
+const SUPPORTED_SINGLE_FORWARD_SLASH_PATTERN = "/"; 
 
 const acceptAlg = ["RS256"];
 
@@ -244,6 +242,7 @@ module.exports.init = function (config, logger, stats) {
 
 // from the product name(s) on the token, find the corresponding proxy
 // then check if that proxy is one of the authorized proxies in bootstrap
+
 const checkIfAuthorized = module.exports.checkIfAuthorized = function checkIfAuthorized(config, urlPath, proxy, decodedToken) {
 
     var parsedUrl = url.parse(urlPath);
