@@ -1,4 +1,4 @@
-const oauth = require('../apikeys/index');
+const apikey = require('../apikeys/index');
 const assert = require('assert');
 const denv = require('dotenv');
 
@@ -10,10 +10,13 @@ const proxy = { name: apiProd, base_path: '/v1/weatheer' }
 const token = { api_product_list: [apiName] }
 
 function* testConfig() {
-    let i =0; while ( i<5 ) {  i++; yield {  
-      "product_to_proxy": [apiProd],
-      "product_to_api_resource": {} 
-}}}
+    let i = 0; while (i < 5) {
+        i++; yield {
+            "product_to_proxy": [apiProd],
+            "product_to_api_resource": {}
+        }
+    }
+}
 
 var [slash, slashstar, slashstarstar, slashstarstar2, customPatternTest] = [...testConfig()];
 slash.product_to_api_resource[apiName] = ["/"];
@@ -42,21 +45,21 @@ describe('apikey plugin', function () {
 
     it('checkIfAuthorized for /', function (done) {
         var contains;
-        contains = oauth.checkIfAuthorized(slash, `${proxy.base_path}`, proxy, token);
+        contains = apikey.checkIfAuthorized(slash, `${proxy.base_path}`, proxy, token);
         assert(contains)
-        contains = oauth.checkIfAuthorized(slash, `${proxy.base_path}/`, proxy, token);
+        contains = apikey.checkIfAuthorized(slash, `${proxy.base_path}/`, proxy, token);
         assert(contains)
-        contains = oauth.checkIfAuthorized(slash, `${proxy.base_path}/1`, proxy, token);
+        contains = apikey.checkIfAuthorized(slash, `${proxy.base_path}/1`, proxy, token);
         assert(contains)
-        contains = oauth.checkIfAuthorized(slash, `${proxy.base_path}/1/`, proxy, token);
+        contains = apikey.checkIfAuthorized(slash, `${proxy.base_path}/1/`, proxy, token);
         assert(contains)
-        contains = oauth.checkIfAuthorized(slash, `${proxy.base_path}/1/2`, proxy, token);
+        contains = apikey.checkIfAuthorized(slash, `${proxy.base_path}/1/2`, proxy, token);
         assert(contains)
-        contains = oauth.checkIfAuthorized(slash, `${proxy.base_path}/1/2/`, proxy, token);
+        contains = apikey.checkIfAuthorized(slash, `${proxy.base_path}/1/2/`, proxy, token);
         assert(contains)
-        contains = oauth.checkIfAuthorized(slash, `${proxy.base_path}/1/2/3/`, proxy, token);
+        contains = apikey.checkIfAuthorized(slash, `${proxy.base_path}/1/2/3/`, proxy, token);
         assert(contains)
-        contains = oauth.checkIfAuthorized(slash, `${proxy.base_path}/1/a/2/3/`, proxy, token);
+        contains = apikey.checkIfAuthorized(slash, `${proxy.base_path}/1/a/2/3/`, proxy, token);
         assert(contains)
         done()
     })
@@ -65,21 +68,21 @@ describe('apikey plugin', function () {
 
     it('checkIfAuthorized for /*', function (done) {
         var contains;
-        contains = oauth.checkIfAuthorized(slashstar, `${proxy.base_path}`, proxy, token);
+        contains = apikey.checkIfAuthorized(slashstar, `${proxy.base_path}`, proxy, token);
         assert(!contains)
-        contains = oauth.checkIfAuthorized(slashstar, `${proxy.base_path}/`, proxy, token);
+        contains = apikey.checkIfAuthorized(slashstar, `${proxy.base_path}/`, proxy, token);
         assert(!contains)
-        contains = oauth.checkIfAuthorized(slashstar, `${proxy.base_path}/1`, proxy, token);
+        contains = apikey.checkIfAuthorized(slashstar, `${proxy.base_path}/1`, proxy, token);
         assert(contains)
-        contains = oauth.checkIfAuthorized(slashstar, `${proxy.base_path}/1/`, proxy, token);
+        contains = apikey.checkIfAuthorized(slashstar, `${proxy.base_path}/1/`, proxy, token);
         assert(contains)
-        contains = oauth.checkIfAuthorized(slashstar, `${proxy.base_path}/1/2`, proxy, token);
+        contains = apikey.checkIfAuthorized(slashstar, `${proxy.base_path}/1/2`, proxy, token);
         assert(!contains)
-        contains = oauth.checkIfAuthorized(slashstar, `${proxy.base_path}/1/2/`, proxy, token);
+        contains = apikey.checkIfAuthorized(slashstar, `${proxy.base_path}/1/2/`, proxy, token);
         assert(!contains)
-        contains = oauth.checkIfAuthorized(slashstar, `${proxy.base_path}/1/2/3/`, proxy, token);
+        contains = apikey.checkIfAuthorized(slashstar, `${proxy.base_path}/1/2/3/`, proxy, token);
         assert(!contains)
-        contains = oauth.checkIfAuthorized(slashstar, `${proxy.base_path}/1/a/2/3/`, proxy, token);
+        contains = apikey.checkIfAuthorized(slashstar, `${proxy.base_path}/1/a/2/3/`, proxy, token);
         assert(!contains)
         done()
     })
@@ -88,21 +91,21 @@ describe('apikey plugin', function () {
 
     it('checkIfAuthorized for /**', function (done) {
         var contains;
-        contains = oauth.checkIfAuthorized(slashstarstar, `${proxy.base_path}`, proxy, token);
+        contains = apikey.checkIfAuthorized(slashstarstar, `${proxy.base_path}`, proxy, token);
         assert(!contains)
-        contains = oauth.checkIfAuthorized(slashstarstar, `${proxy.base_path}/`, proxy, token);
+        contains = apikey.checkIfAuthorized(slashstarstar, `${proxy.base_path}/`, proxy, token);
         assert(!contains)
-        contains = oauth.checkIfAuthorized(slashstarstar, `${proxy.base_path}/1`, proxy, token);
+        contains = apikey.checkIfAuthorized(slashstarstar, `${proxy.base_path}/1`, proxy, token);
         assert(contains)
-        contains = oauth.checkIfAuthorized(slashstarstar, `${proxy.base_path}/1/`, proxy, token);
+        contains = apikey.checkIfAuthorized(slashstarstar, `${proxy.base_path}/1/`, proxy, token);
         assert(contains)
-        contains = oauth.checkIfAuthorized(slashstarstar, `${proxy.base_path}/1/2`, proxy, token);
+        contains = apikey.checkIfAuthorized(slashstarstar, `${proxy.base_path}/1/2`, proxy, token);
         assert(contains)
-        contains = oauth.checkIfAuthorized(slashstarstar, `${proxy.base_path}/1/2/`, proxy, token);
+        contains = apikey.checkIfAuthorized(slashstarstar, `${proxy.base_path}/1/2/`, proxy, token);
         assert(contains)
-        contains = oauth.checkIfAuthorized(slashstarstar, `${proxy.base_path}/1/2/3/`, proxy, token);
+        contains = apikey.checkIfAuthorized(slashstarstar, `${proxy.base_path}/1/2/3/`, proxy, token);
         assert(contains)
-        contains = oauth.checkIfAuthorized(slashstarstar, `${proxy.base_path}/1/a/2/3/`, proxy, token);
+        contains = apikey.checkIfAuthorized(slashstarstar, `${proxy.base_path}/1/a/2/3/`, proxy, token);
         assert(contains)
         done()
 
@@ -112,38 +115,37 @@ describe('apikey plugin', function () {
 
     it('checkIfAuthorized for  /*/2/**  ', function (done) {
         var contains;
-        contains = oauth.checkIfAuthorized(slashstarstar2, `${proxy.base_path}`, proxy, token);
+        contains = apikey.checkIfAuthorized(slashstarstar2, `${proxy.base_path}`, proxy, token);
         assert(!contains)
-        contains = oauth.checkIfAuthorized(slashstarstar2, `${proxy.base_path}/`, proxy, token);
+        contains = apikey.checkIfAuthorized(slashstarstar2, `${proxy.base_path}/`, proxy, token);
         assert(!contains)
-        contains = oauth.checkIfAuthorized(slashstarstar2, `${proxy.base_path}/1`, proxy, token);
+        contains = apikey.checkIfAuthorized(slashstarstar2, `${proxy.base_path}/1`, proxy, token);
         assert(!contains)
-        contains = oauth.checkIfAuthorized(slashstarstar2, `${proxy.base_path}/1/`, proxy, token);
+        contains = apikey.checkIfAuthorized(slashstarstar2, `${proxy.base_path}/1/`, proxy, token);
         assert(!contains)
-        contains = oauth.checkIfAuthorized(slashstarstar2, `${proxy.base_path}/1/2`, proxy, token);
+        contains = apikey.checkIfAuthorized(slashstarstar2, `${proxy.base_path}/1/2`, proxy, token);
         assert(!contains)
-        contains = oauth.checkIfAuthorized(slashstarstar2, `${proxy.base_path}/1/2/`, proxy, token);
+        contains = apikey.checkIfAuthorized(slashstarstar2, `${proxy.base_path}/1/2/`, proxy, token);
         assert(contains)
-        contains = oauth.checkIfAuthorized(slashstarstar2, `${proxy.base_path}/1/2/3/`, proxy, token);
+        contains = apikey.checkIfAuthorized(slashstarstar2, `${proxy.base_path}/1/2/3/`, proxy, token);
         assert(contains)
-        contains = oauth.checkIfAuthorized(slashstarstar2, `${proxy.base_path}/1/a/2/3/`, proxy, token);
+        contains = apikey.checkIfAuthorized(slashstarstar2, `${proxy.base_path}/1/a/2/3/`, proxy, token);
         assert(!contains)
         done()
     })
 
-     // check for /a/b/c resource path.
+    // check for /a/b/c resource path.
 
-   it('checkIfAuthorized for /a/b/c', function (done) {
-    var contains;
-   contains = oauth.checkIfAuthorized(customPatternTest, `${proxy.base_path}/a/b/c`, proxy, token);  
-   assert(contains)
-   contains = oauth.checkIfAuthorized(customPatternTest, `${proxy.base_path}/a`, proxy, token);  
-   assert(!contains)
-   contains = oauth.checkIfAuthorized(customPatternTest, `${proxy.base_path}/a/b`, proxy, token);  
-   assert(!contains)
-   contains = oauth.checkIfAuthorized(customPatternTest, `${proxy.base_path}/a/b/c/d`, proxy, token);  
-   assert(!contains)
-   done()
-  })
-
+    it('checkIfAuthorized for /a/b/c', function (done) {
+        var contains;
+        contains = apikey.checkIfAuthorized(customPatternTest, `${proxy.base_path}/a/b/c`, proxy, token);
+        assert(contains)
+        contains = apikey.checkIfAuthorized(customPatternTest, `${proxy.base_path}/a`, proxy, token);
+        assert(!contains)
+        contains = apikey.checkIfAuthorized(customPatternTest, `${proxy.base_path}/a/b`, proxy, token);
+        assert(!contains)
+        contains = apikey.checkIfAuthorized(customPatternTest, `${proxy.base_path}/a/b/c/d`, proxy, token);
+        assert(!contains)
+        done()
+    })
 }); 
