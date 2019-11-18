@@ -245,8 +245,13 @@ module.exports.init = function (config, logger, stats) {
 
 const checkIfAuthorized = module.exports.checkIfAuthorized = function checkIfAuthorized(config, urlPath, proxy, decodedToken) {
 
+    console.log("-----------------in apikeys---------------------------------------------------");
+
     var parsedUrl = url.parse(urlPath);
+    console.log("parsedUrl", parsedUrl);
+
     debug('product only: ' + productOnly);
+
     if (!decodedToken.api_product_list) {
         debug('no api product list');
         return false;
@@ -264,8 +269,10 @@ const checkIfAuthorized = module.exports.checkIfAuthorized = function checkIfAut
         }
 
         const apiproxies = config.product_to_api_resource[product];
+        console.log("apiproxies",apiproxies);
         var matchesProxyRules = false;
         if (apiproxies && apiproxies.length) {
+            console.log("in if ",apiproxies, "-------------after", apiproxies.length);
             apiproxies.forEach(function (tempApiProxy) {
                 if (matchesProxyRules) {
                     //found one
@@ -273,6 +280,7 @@ const checkIfAuthorized = module.exports.checkIfAuthorized = function checkIfAut
                     return;
                 }
                 if (tempApiProxy === SUPPORTED_SINGLE_FORWARD_SLASH_PATTERN) {
+                    console.log("SUPPORTED_SINGLE_FORWARD_SLASH_PATTERN", tempApiProxy);
                     matchesProxyRules = true
                 } else {
 
