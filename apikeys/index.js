@@ -12,9 +12,7 @@ var requestLib = require("request");
 var _ = require("lodash");
 
 const PRIVATE_JWT_VALUES = ["application_name", "client_id", "api_product_list", "iat", "exp"];
-const SUPPORTED_DOUBLE_ASTERIK_PATTERN = "**";
-const SUPPORTED_SINGLE_ASTERIK_PATTERN = "*";
-// const SUPPORTED_SINGLE_FORWARD_SLASH_PATTERN = "/";    // ?? this has yet to be used in any module.
+const SUPPORTED_SINGLE_FORWARD_SLASH_PATTERN = "/";
 
 const acceptAlg = ["RS256"];
 
@@ -26,13 +24,20 @@ var cacheKey = false;
 
 const LOG_TAG_COMP = 'apikeys';
 const CONSOLE_LOG_TAG_COMP = 'microgateway-plugins apikeys';
+const DOUBLE_STAR_PLACEHOLDER = '@@@@';
 
 module.exports.init = function(config, logger, stats) {
+
+    if (config === undefined || !config) return (undefined);
 
     var request = config.request ? requestLib.defaults(config.request) : requestLib;
     var keys = config.jwk_keys ? JSON.parse(config.jwk_keys) : null;
 
     var middleware = function(req, res, next) {
+
+
+        if (!req || !res) return (-1); // need to check bad args 
+        if (!req.headers) return (-1); // or throw -- means callers are bad
 
         var apiKeyHeaderName = config.hasOwnProperty("api-key-header") ? config["api-key-header"] : "x-api-key";
 		//set to true retain the api key
@@ -50,7 +55,6 @@ module.exports.init = function(config, logger, stats) {
         if (process.env.EDGEMICRO_LOCAL_PROXY === "1") {
             productOnly = true;
         }        
-
         //leaving rest of the code same to ensure backward compatibility
         apiKey = req.headers[apiKeyHeaderName]
         if ( apiKey ) {
@@ -267,44 +271,52 @@ const checkIfAuthorized = module.exports.checkIfAuthorized = function checkIfAut
             }
         }
 
-
-        const apiproxies = config.product_to_api_resource[product];
+        const resourcePaths = config.product_to_api_resource[product];
 
         var matchesProxyRules = false;
-        if (apiproxies && apiproxies.length) {
-            apiproxies.forEach(function(tempApiProxy) {
+        if (resourcePaths && resourcePaths.length) {
+            resourcePaths.forEach(function(productResourcePath) {
                 if (matchesProxyRules) {
                     //found one
                     debug("found matching proxy rule");
                     return;
                 }
-
-                urlPath = parsedUrl.pathname;
-                const apiproxy = tempApiProxy.includes(proxy.base_path) ?
-                    tempApiProxy :
-                    proxy.base_path + (tempApiProxy.startsWith("/") ? "" : "/") + tempApiProxy
-                if (apiproxy.endsWith("/") && !urlPath.endsWith("/")) {
-                    urlPath = urlPath + "/";
-                }
-
-                if (apiproxy.includes(SUPPORTED_DOUBLE_ASTERIK_PATTERN)) {
-                    const regex = apiproxy.replace(/\*\*/gi, ".*")
-                    matchesProxyRules = urlPath.match(regex)
+                if (productResourcePath === SUPPORTED_SINGLE_FORWARD_SLASH_PATTERN) {
+                    matchesProxyRules = true;
                 } else {
-                    if (apiproxy.includes(SUPPORTED_SINGLE_ASTERIK_PATTERN)) {
-                        const regex = apiproxy.replace(/\*/gi, "[^/]+");
-                        matchesProxyRules = urlPath.match(regex)
-                    } else {
-                        // if(apiproxy.includes(SUPPORTED_SINGLE_FORWARD_SLASH_PATTERN)){
-                        // }
-                        matchesProxyRules = urlPath === apiproxy;
+                    urlPath = parsedUrl.pathname;
+                    let apiproxy = productResourcePath.includes(proxy.base_path) ?
+                        productResourcePath :
+                        proxy.base_path + (productResourcePath.startsWith("/") ? "" : "/") + productResourcePath;
 
+                    //  lastIndexOf("/") === 0 condition is valid for pattern ex : /*, /** , /a* etc
+                    if (!apiproxy.endsWith("/") && urlPath.endsWith("/") && (productResourcePath.lastIndexOf("/") === 0 )) { 
+                        apiproxy = apiproxy + "/";
+                    }
+                    
+                    let placeholder = DOUBLE_STAR_PLACEHOLDER;
+
+                    while (apiproxy.indexOf(placeholder) !== -1) { 
+                        placeholder = '_' + DOUBLE_STAR_PLACEHOLDER + '_' + placeholder + '_';
+                    }
+
+                    let regExPatternStr = apiproxy.replace(/\*\*/g, placeholder); 
+                    regExPatternStr = regExPatternStr.replace('*','\\w+');
+                    placeholder = new RegExp(placeholder, "g");
+                    regExPatternStr = regExPatternStr.replace(placeholder,'\.*');
+
+                    try{
+                        const proxyRegEx = new RegExp(`^${regExPatternStr}$`, 'ig');
+                        matchesProxyRules = urlPath.match(proxyRegEx);
+                    }catch(e){
+                        debug('Exception in generating regex for the pattern :', proxyRegEx);
+                        logger.eventLog({ level:'warn', req: req, res: res, err: e, component:LOG_TAG_COMP}, 'exception in forming regex for pattern');
                     }
                 }
             })
 
         } else {
-            matchesProxyRules = true
+            matchesProxyRules = true;
         }
 
         debug("matches proxy rules: " + matchesProxyRules);
