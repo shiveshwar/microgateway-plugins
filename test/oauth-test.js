@@ -100,7 +100,7 @@ describe('oauth plugin', function() {
     done();
   })
  
-  it('exposes an onrequest handler', (done) => {
+  it('exposes an onrequest handler with config', (done) => {
 
     //
     var pluginT = oauth.init(oauthConfiigDefaults, logger, stats);
@@ -160,156 +160,150 @@ describe('oauth plugin', function() {
 
   })
 
-  it('req and res are empty and default config ', (done) => {
-    // 
-    //
-    var req = {
-      headers : {}
-    };
-    var res = {};
-    //
-    process.env.EDGEMICRO_LOCAL_PROXY = "1"
-    //
-    var cb_called = false;
-    //
-    var cb = () => {
-      cb_called = true;
-      assert(true)
-      done();
-    }
-    //
-    try {
-      var pluginT = oauth.init(oauthConfiigDefaults, logger, stats);
-      pluginT.onrequest(req,res,cb)
-      if ( !cb_called ) {
-        assert(false);
-        done();
-      }
-    //
-    } catch(e) {
-      console.log(e);
-      assert(false)
-      done()
-    }
-
-  })
-
-  // check for / resource path.
-
-  it('checkIfAuthorized for /', function (done) {
-    var contains;
-    contains = oauth.checkIfAuthorized(slash, `${proxy.base_path}`, proxy, token);  
-    assert(contains)
-    contains = oauth.checkIfAuthorized(slash, `${proxy.base_path}/`, proxy, token);
-    assert(contains)
-    contains = oauth.checkIfAuthorized(slash, `${proxy.base_path}/1`, proxy, token);
-    assert(contains)
-    contains = oauth.checkIfAuthorized(slash, `${proxy.base_path}/1/`, proxy, token);
-    assert(contains)
-    contains = oauth.checkIfAuthorized(slash, `${proxy.base_path}/1/2`, proxy, token);
-    assert(contains)
-    contains = oauth.checkIfAuthorized(slash, `${proxy.base_path}/1/2/`, proxy, token);
-    assert(contains)
-    contains = oauth.checkIfAuthorized(slash, `${proxy.base_path}/1/2/3/`, proxy, token);
-    assert(contains)
-    contains = oauth.checkIfAuthorized(slash, `${proxy.base_path}/1/a/2/3/`, proxy, token);
-    assert(contains)
-    done()
-  })
-
-   // check for /* resource path.
-
-  it('checkIfAuthorized for /*', function (done) {
-    var contains;
-     contains = oauth.checkIfAuthorized(slashstar, `${proxy.base_path}`, proxy, token);  
-    assert(!contains)
-    contains = oauth.checkIfAuthorized(slashstar, `${proxy.base_path}/`, proxy, token);
-    assert(!contains)
-    contains = oauth.checkIfAuthorized(slashstar, `${proxy.base_path}/1`, proxy, token);
-    assert(contains)
-    contains = oauth.checkIfAuthorized(slashstar, `${proxy.base_path}/1/`, proxy, token);
-    assert(contains)
-    contains = oauth.checkIfAuthorized(slashstar, `${proxy.base_path}/1/2`, proxy, token);
-    assert(!contains)
-    contains = oauth.checkIfAuthorized(slashstar, `${proxy.base_path}/1/2/`, proxy, token);
-    assert(!contains)
-    contains = oauth.checkIfAuthorized(slashstar, `${proxy.base_path}/1/2/3/`, proxy, token);
-    assert(!contains)
-    contains = oauth.checkIfAuthorized(slashstar, `${proxy.base_path}/1/a/2/3/`, proxy, token);
-    assert(!contains)
-    done()
-  })
-  
-   // check for /** resource path.
-
-  it('checkIfAuthorized for /**', function (done) {
-    var contains;
-   contains = oauth.checkIfAuthorized(slashstarstar, `${proxy.base_path}`, proxy, token);  
-    assert(!contains)
-    contains = oauth.checkIfAuthorized(slashstarstar, `${proxy.base_path}/`, proxy, token);
-    assert(!contains)
-    contains = oauth.checkIfAuthorized(slashstarstar, `${proxy.base_path}/1`, proxy, token);
-    assert(contains)
-    contains = oauth.checkIfAuthorized(slashstarstar, `${proxy.base_path}/1/`, proxy, token);
-    assert(contains)
-    contains = oauth.checkIfAuthorized(slashstarstar, `${proxy.base_path}/1/2`, proxy, token);
-    assert(contains)
-    contains = oauth.checkIfAuthorized(slashstarstar, `${proxy.base_path}/1/2/`, proxy, token);
-    assert(contains)
-    contains = oauth.checkIfAuthorized(slashstarstar, `${proxy.base_path}/1/2/3/`, proxy, token);
-    assert(contains)
-    contains = oauth.checkIfAuthorized(slashstarstar, `${proxy.base_path}/1/a/2/3/`, proxy, token);
-    assert(contains)
-    done()
-
-  })
-
-   // check for /*/2/** resource path.
-
-  it('checkIfAuthorized for  /*/2/**  ', function (done) {
-    var contains;
-    contains = oauth.checkIfAuthorized(slashstarstar2, `${proxy.base_path}`, proxy, token);
-    assert(!contains)
-    contains = oauth.checkIfAuthorized(slashstarstar2, `${proxy.base_path}/`, proxy, token);
-    assert(!contains)
-    contains = oauth.checkIfAuthorized(slashstarstar2, `${proxy.base_path}/1`, proxy, token);
-    assert(!contains)
-    contains = oauth.checkIfAuthorized(slashstarstar2, `${proxy.base_path}/1/`, proxy, token);
-    assert(!contains)
-    contains = oauth.checkIfAuthorized(slashstarstar2, `${proxy.base_path}/1/2`, proxy, token);
-    assert(!contains)
-    contains = oauth.checkIfAuthorized(slashstarstar2, `${proxy.base_path}/1/2/`, proxy, token);
-    assert(contains)
-    contains = oauth.checkIfAuthorized(slashstarstar2, `${proxy.base_path}/1/2/3/`, proxy, token);
-    assert(contains)
-    contains = oauth.checkIfAuthorized(slashstarstar2, `${proxy.base_path}/1/a/2/3/`, proxy, token);
-    assert(!contains)
-    done()
-  })
-
-
-   // check for /a/b/c resource path.
-
-   it('checkIfAuthorized for /a/b/c', function (done) {
-    var contains;
-   contains = oauth.checkIfAuthorized(customPatternTest, `${proxy.base_path}/a/b/c`, proxy, token);  
-   assert(contains)
-   contains = oauth.checkIfAuthorized(customPatternTest, `${proxy.base_path}/a`, proxy, token);  
-   assert(!contains)
-   contains = oauth.checkIfAuthorized(customPatternTest, `${proxy.base_path}/a/b`, proxy, token);  
-   assert(!contains)
-   contains = oauth.checkIfAuthorized(customPatternTest, `${proxy.base_path}/a/b/c/d`, proxy, token);  
-   assert(!contains)
-   done()
-  })
-
   // should be identical for these tests
   var modules = { oauth, oauthv2 }
   for (var name in modules) {
 
     describe(name, function() {
 
-      var package = modules[name]
+      var package = modules[name];
+
+      it('req and res are empty and default config ', (done) => {
+        var req = {
+          headers : {}
+        };
+            var res = {
+              setHeader: function () { },
+              end: function () { }, 
+            };
+        process.env.EDGEMICRO_LOCAL_PROXY = "1"
+        var cb_called = false;
+        var cb = () => {
+          cb_called = true;
+          assert(true)
+          done();
+        }
+        try {
+              var pluginT = package.init(oauthConfiigDefaults, logger, stats);
+          pluginT.onrequest(req,res,cb)
+          if ( !cb_called ) {
+            assert(false);
+            done();
+          }
+        } catch(e) {
+          console.log(e);
+          assert(false)
+          done()
+        }
+      })
+
+      // check for / resource path.
+
+      it('checkIfAuthorized for /', function (done) {
+        var contains;
+                contains = package.checkIfAuthorized(slash, `${proxy.base_path}`, proxy, token);  
+        assert(contains)
+                contains = package.checkIfAuthorized(slash, `${proxy.base_path}/`, proxy, token);
+        assert(contains)
+                contains = package.checkIfAuthorized(slash, `${proxy.base_path}/1`, proxy, token);
+        assert(contains)
+                contains = package.checkIfAuthorized(slash, `${proxy.base_path}/1/`, proxy, token);
+        assert(contains)
+                contains = package.checkIfAuthorized(slash, `${proxy.base_path}/1/2`, proxy, token);
+        assert(contains)
+                contains = package.checkIfAuthorized(slash, `${proxy.base_path}/1/2/`, proxy, token);
+        assert(contains)
+                contains = package.checkIfAuthorized(slash, `${proxy.base_path}/1/2/3/`, proxy, token);
+        assert(contains)
+                contains = package.checkIfAuthorized(slash, `${proxy.base_path}/1/a/2/3/`, proxy, token);
+        assert(contains)
+        done()
+      })
+
+      // check for /* resource path.
+
+      it('checkIfAuthorized for /*', function (done) {
+        var contains;
+                contains = package.checkIfAuthorized(slashstar, `${proxy.base_path}`, proxy, token);  
+        assert(!contains)
+                contains = package.checkIfAuthorized(slashstar, `${proxy.base_path}/`, proxy, token);
+        assert(!contains)
+                contains = package.checkIfAuthorized(slashstar, `${proxy.base_path}/1`, proxy, token);
+        assert(contains)
+                contains = package.checkIfAuthorized(slashstar, `${proxy.base_path}/1/`, proxy, token);
+        assert(contains)
+                contains = package.checkIfAuthorized(slashstar, `${proxy.base_path}/1/2`, proxy, token);
+        assert(!contains)
+                contains = package.checkIfAuthorized(slashstar, `${proxy.base_path}/1/2/`, proxy, token);
+        assert(!contains)
+                contains = package.checkIfAuthorized(slashstar, `${proxy.base_path}/1/2/3/`, proxy, token);
+        assert(!contains)
+                contains = package.checkIfAuthorized(slashstar, `${proxy.base_path}/1/a/2/3/`, proxy, token);
+        assert(!contains)
+        done()
+      })
+      
+      // check for /** resource path.
+
+      it('checkIfAuthorized for /**', function (done) {
+        var contains;
+              contains = package.checkIfAuthorized(slashstarstar, `${proxy.base_path}`, proxy, token);  
+        assert(!contains)
+                contains = package.checkIfAuthorized(slashstarstar, `${proxy.base_path}/`, proxy, token);
+        assert(!contains)
+                contains = package.checkIfAuthorized(slashstarstar, `${proxy.base_path}/1`, proxy, token);
+        assert(contains)
+                contains = package.checkIfAuthorized(slashstarstar, `${proxy.base_path}/1/`, proxy, token);
+        assert(contains)
+                contains = package.checkIfAuthorized(slashstarstar, `${proxy.base_path}/1/2`, proxy, token);
+        assert(contains)
+                contains = package.checkIfAuthorized(slashstarstar, `${proxy.base_path}/1/2/`, proxy, token);
+        assert(contains)
+                contains = package.checkIfAuthorized(slashstarstar, `${proxy.base_path}/1/2/3/`, proxy, token);
+        assert(contains)
+                contains = package.checkIfAuthorized(slashstarstar, `${proxy.base_path}/1/a/2/3/`, proxy, token);
+        assert(contains)
+        done()
+
+      })
+
+      // check for /*/2/** resource path.
+
+      it('checkIfAuthorized for  /*/2/**  ', function (done) {
+        var contains;
+                contains = package.checkIfAuthorized(slashstarstar2, `${proxy.base_path}`, proxy, token);
+        assert(!contains)
+                contains = package.checkIfAuthorized(slashstarstar2, `${proxy.base_path}/`, proxy, token);
+        assert(!contains)
+                contains = package.checkIfAuthorized(slashstarstar2, `${proxy.base_path}/1`, proxy, token);
+        assert(!contains)
+                contains = package.checkIfAuthorized(slashstarstar2, `${proxy.base_path}/1/`, proxy, token);
+        assert(!contains)
+                contains = package.checkIfAuthorized(slashstarstar2, `${proxy.base_path}/1/2`, proxy, token);
+        assert(!contains)
+                contains = package.checkIfAuthorized(slashstarstar2, `${proxy.base_path}/1/2/`, proxy, token);
+        assert(contains)
+                contains = package.checkIfAuthorized(slashstarstar2, `${proxy.base_path}/1/2/3/`, proxy, token);
+        assert(contains)
+                contains = package.checkIfAuthorized(slashstarstar2, `${proxy.base_path}/1/a/2/3/`, proxy, token);
+        assert(!contains)
+        done()
+      })
+
+      // check for /a/b/c resource path.
+
+      it('checkIfAuthorized for /a/b/c', function (done) {
+        var contains;
+              contains = package.checkIfAuthorized(customPatternTest, `${proxy.base_path}/a/b/c`, proxy, token);  
+      assert(contains)
+              contains = package.checkIfAuthorized(customPatternTest, `${proxy.base_path}/a`, proxy, token);  
+      assert(!contains)
+              contains = package.checkIfAuthorized(customPatternTest, `${proxy.base_path}/a/b`, proxy, token);  
+      assert(!contains)
+              contains = package.checkIfAuthorized(customPatternTest, `${proxy.base_path}/a/b/c/d`, proxy, token);  
+      assert(!contains)
+      done()
+      })
 
       it('exposes an onrequest handler', function() {
           var config = {}

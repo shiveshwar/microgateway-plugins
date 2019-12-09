@@ -11,9 +11,7 @@ var _ = require('lodash');
 
 const authHeaderRegex = /Bearer (.+)/;
 const PRIVATE_JWT_VALUES = ['application_name', 'client_id', 'api_product_list', 'iat', 'exp'];
-const SUPPORTED_DOUBLE_ASTERIK_PATTERN = "**";
-const SUPPORTED_SINGLE_ASTERIK_PATTERN = "*";
-//const SUPPORTED_SINGLE_FORWARD_SLASH_PATTERN = "/";
+const SUPPORTED_SINGLE_FORWARD_SLASH_PATTERN = "/";
 
 const LOG_TAG_COMP = 'oauthv2';
 
@@ -38,6 +36,9 @@ module.exports.init = function(config, logger, stats) {
 
     var middleware = function(req, res, next) {
 
+        if ( !req || !res ) return(-1); // need to check bad args 
+        if ( !req.headers ) return(-1); // or throw -- means callers are bad
+        
         var authHeaderName = config.hasOwnProperty('authorization-header') ? config['authorization-header'] : 'authorization';
         var keepAuthHeader = config.hasOwnProperty('keep-authorization-header') ? config['keep-authorization-header'] : false;
         //set grace period
@@ -86,7 +87,6 @@ module.exports.init = function(config, logger, stats) {
         var isValid = false;
         var oauthtoken = token && token.token ? token.token : token;
 		var decodedToken;
-		
 		try {
 			decodedToken = JWS.parse(oauthtoken);
 		} catch (err) {
@@ -210,10 +210,7 @@ module.exports.init = function(config, logger, stats) {
 const checkIfAuthorized = module.exports.checkIfAuthorized = function checkIfAuthorized(config, urlPath, proxy, decodedToken) {
 
     var parsedUrl = url.parse(urlPath);
-    //
     debug('product only: ' + productOnly);
-    //
-
     if (!decodedToken.api_product_list) {
         debug('no api product list');
         return false;
@@ -230,9 +227,7 @@ const checkIfAuthorized = module.exports.checkIfAuthorized = function checkIfAut
             }
         }
 
-
         const apiproxies = config.product_to_api_resource[product];
-
         var matchesProxyRules = false;
         if (apiproxies && apiproxies.length) {
             apiproxies.forEach(function(tempApiProxy) {
@@ -241,6 +236,9 @@ const checkIfAuthorized = module.exports.checkIfAuthorized = function checkIfAut
                     debug('found matching proxy rule');
                     return;
                 }
+                if ( tempApiProxy === SUPPORTED_SINGLE_FORWARD_SLASH_PATTERN ) {
+                    matchesProxyRules = true
+                } else {
 
                 urlPath = parsedUrl.pathname;
                 const apiproxy = tempApiProxy.includes(proxy.base_path) ?
@@ -249,20 +247,14 @@ const checkIfAuthorized = module.exports.checkIfAuthorized = function checkIfAut
                 if (apiproxy.endsWith("/") && !urlPath.endsWith("/")) {
                     urlPath = urlPath + "/";
                 }
-
-                if (apiproxy.includes(SUPPORTED_DOUBLE_ASTERIK_PATTERN)) {
-                    const regex = apiproxy.replace(/\*\*/gi, ".*")
-                    matchesProxyRules = urlPath.match(regex)
-                } else {
-                    if (apiproxy.includes(SUPPORTED_SINGLE_ASTERIK_PATTERN)) {
-                        const regex = apiproxy.replace(/\*/gi, "[^/]+");
-                        matchesProxyRules = urlPath.match(regex)
-                    } else {
-                        // if(apiproxy.includes(SUPPORTED_SINGLE_FORWARD_SLASH_PATTERN)){
-                        // }
-                        matchesProxyRules = urlPath === apiproxy;
-
-                    }
+                    const proxyRegEx = new RegExp(`^${proxy.base_path
+                        .replace(/\//g,'\\/')}${tempApiProxy
+                        .replace(/(\w+)\/\*\*/g,'$1/.*')
+                        .replace(/\/\*\*/g,'/\\w+.*')
+                        .replace( /\"/, '')
+                        .replace(/\//g,'\\/')
+                        .replace(/\/\*(.*?)(?=\/|$)/g,'\/\\w+\\/*') }$`, 'ig');                       
+                        matchesProxyRules = urlPath.match(proxyRegEx);
                 }
             })
 
