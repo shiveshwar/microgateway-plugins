@@ -6,6 +6,7 @@ var rs = require('jsrsasign');
 var fs = require('fs');
 var path = require('path');
 const memoredpath = '../third_party/memored/index';
+const PLACEHOLDERSTR = '@@@@';
 var sharedMemoryCache = require(memoredpath);
 
 //creating aliases for apiKeyCache and validTokenCache for readability
@@ -409,34 +410,51 @@ const checkIfAuthorized = module.exports.checkIfAuthorized = function checkIfAut
             }
         }
 
-        const apiproxies = config.product_to_api_resource[product];
+        const resourcePaths= config.product_to_api_resource[product];
         var matchesProxyRules = false;
-        if (apiproxies && apiproxies.length) {
-            apiproxies.forEach(function(tempApiProxy) {
+        if (resourcePaths&& resourcePaths.length) {
+            resourcePaths.forEach(function(productResourcePath) {
                 if (matchesProxyRules) {
                     //found one
                     debug('found matching proxy rule');
                     return;
                 }
-                if ( tempApiProxy === SUPPORTED_SINGLE_FORWARD_SLASH_PATTERN ) {
+                if ( productResourcePath === SUPPORTED_SINGLE_FORWARD_SLASH_PATTERN ) {
                     matchesProxyRules = true
                 } else {
+                    urlPath = parsedUrl.pathname;
+                    
+                    let apiproxy = productResourcePath.includes(proxy.base_path) ?
+                        productResourcePath :
+                        proxy.base_path + (productResourcePath.startsWith("/") ? "" : "/") + productResourcePath
 
-                urlPath = parsedUrl.pathname;
-                const apiproxy = tempApiProxy.includes(proxy.base_path) ?
-                    tempApiProxy :
-                    proxy.base_path + (tempApiProxy.startsWith("/") ? "" : "/") + tempApiProxy
-                if (apiproxy.endsWith("/") && !urlPath.endsWith("/")) {
-                    urlPath = urlPath + "/";
-                }
-                    const proxyRegEx = new RegExp(`^${proxy.base_path
-                        .replace(/\//g,'\\/')}${tempApiProxy
-                        .replace(/(\w+)\/\*\*/g,'$1/.*')
-                        .replace(/\/\*\*/g,'/\\w+.*')
-                        .replace( /\"/, '')
-                        .replace(/\//g,'\\/')
-                        .replace(/\/\*(.*?)(?=\/|$)/g,'\/\\w+\\/*') }$`, 'ig');                       
+                        
+                    //  lastIndexOf("/") === 0 condition is valid for pattern ex : /*, /** , /a* etc 
+                    if (!apiproxy.endsWith("/") && urlPath.endsWith("/") && (productResourcePath.lastIndexOf("/") === 0 )) { 
+                        apiproxy = apiproxy + "/";
+                    }
+                
+                    let placeholder = PLACEHOLDERSTR;
+
+                    while (apiproxy.indexOf(placeholder) !== -1) { 
+                        placeholder += PLACEHOLDERSTR; 
+                    }
+
+                    let regExPatternStr = apiproxy.replace(/\*\*/g, placeholder); 
+
+                    regExPatternStr = regExPatternStr.replace('*','\\w+')
+
+                    placeholder = new RegExp(placeholder, "g");
+
+                    regExPatternStr = regExPatternStr.replace(placeholder,'\.*');
+
+                    try{
+                        const proxyRegEx = new RegExp(`^${regExPatternStr}$`, 'ig');
                         matchesProxyRules = urlPath.match(proxyRegEx);
+                    }catch(e){
+                        logger.eventLog({ level:'warn', req: req, res: res, err: e, component: LOG_TAG_COMP}, 'exception in forming regex for the pattern');
+                    }
+
                 }
             })
 
@@ -445,6 +463,7 @@ const checkIfAuthorized = module.exports.checkIfAuthorized = function checkIfAut
         }
 
         debug("matches proxy rules: " + matchesProxyRules);
+
         //add pattern matching here
         if (!productOnly)
             return matchesProxyRules && validProxyNames.indexOf(proxy.name) >= 0;
@@ -524,26 +543,25 @@ function sendError(req, res, next, logger, stats, code, message, upstreamResp) {
             traceHelper.setChildErrorSpan('oauth', req.headers);        
         } catch (err) {}
     }
-    //
 
     if ( !res.finished ) {
         try {
             res.setHeader('content-type', 'application/json');
         } catch (e) {
-            logger.eventLog({level:'warn', req: req, res: res, err:null, component:LOG_TAG_COMP }, "ouath response object lacks setHeader");
+            logger.eventLog({level:'warn', req: req, res: res, err:null, component:LOG_TAG_COMP }, "oauth response object lacks setHeader");
         }
     }
 
     try {
         res.end(JSON.stringify(response));
     } catch (e) {
-        logger.eventLog({level:'warn', req: req, res: res, err:null, component:LOG_TAG_COMP }, "ouath response object is not supplied by runtime");
+        logger.eventLog({level:'warn', req: req, res: res, err:null, component:LOG_TAG_COMP }, "oauth response object is not supplied by runtime");
     }
     
     try {
         stats.incrementStatusCount(res.statusCode);
     } catch (e) {
-        logger.eventLog({level:'warn', req: req, res: res, err:null, component:LOG_TAG_COMP }, "ouath stats object is not supplied by runtime");
+        logger.eventLog({level:'warn', req: req, res: res, err:null, component:LOG_TAG_COMP }, "oauth stats object is not supplied by runtime");
     }
     
     next(code, message);
