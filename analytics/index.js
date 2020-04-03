@@ -90,8 +90,10 @@ module.exports.init = function(config, logger /*, stats */) {
         },
 
         onresponse: function(req, res, next) {
-            var timestamp = Date.now();
-            req.headers['target_received_start_timestamp'] = timestamp;
+             if(!req.headers['target_received_start_timestamp']){
+                var timestamp = Date.now();
+                req.headers['target_received_start_timestamp'] = timestamp;
+            }
             next();
         },
 
