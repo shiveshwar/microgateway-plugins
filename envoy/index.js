@@ -11,6 +11,7 @@ module.exports.init = function(config, logger, stats ) {
             res.setHeader('x-apigee-emg-target-resp-recd', req.headers['target_received_start_timestamp']);
             //set target-req-sent
             res.setHeader('x-apigee-emg-target-req-sent', req.headers['target_sent_start_timestamp']);
+            logger.eventLog({level:'info',res:res,req:req,component:'envoy'});
             next();
         },
         //error receiving client request
@@ -20,5 +21,4 @@ module.exports.init = function(config, logger, stats ) {
             next();
         }
     };
-    
 }
