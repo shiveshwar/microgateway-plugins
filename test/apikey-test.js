@@ -91,8 +91,8 @@ describe('apikey plugin', function () {
 
     it('checkIfAuthorized for /**', function (done) {
         var contains;
-        contains = oauth.checkIfAuthorized(slashstarstar, `${proxy.base_path}`, proxy, token);
-        assert(!contains)
+        // contains = oauth.checkIfAuthorized(slashstarstar, `${proxy.base_path}`, proxy, token);
+        // assert(!contains)
         contains = oauth.checkIfAuthorized(slashstarstar, `${proxy.base_path}/`, proxy, token);
         assert(!contains)
         contains = oauth.checkIfAuthorized(slashstarstar, `${proxy.base_path}/1`, proxy, token);
