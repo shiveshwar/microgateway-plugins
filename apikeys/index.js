@@ -6,7 +6,7 @@ var rs = require("jsrsasign");
 var fs = require("fs");
 var path = require("path");
 const memoredpath = '../third_party/memored/index';
-const checkIfAuthorized = require('../lib/validateResourcePath');
+const checkIfAuthorizedLib = require('../lib/validateResourcePath');
 var cache = require(memoredpath);
 var JWS = rs.jws.JWS;
 var requestLib = require("request");
@@ -26,7 +26,7 @@ const LOG_TAG_COMP = 'apikeys';
 const CONSOLE_LOG_TAG_COMP = 'microgateway-plugins apikeys';
 
 module.exports.init = function(config, logger, stats) {
-
+    const checkIfAuthorized = checkIfAuthorizedLib(logger, LOG_TAG_COMP, debug);
     if (config === undefined || !config) return (undefined);
 
     var request = config.request ? requestLib.defaults(config.request) : requestLib;
@@ -219,7 +219,7 @@ module.exports.init = function(config, logger, stats) {
     };
 
     function authorize(req, res, next, logger, stats, decodedToken, apiKey) {
-        if (checkIfAuthorized(config, req, res, decodedToken, productOnly, logger, LOG_TAG_COMP)) {
+        if (checkIfAuthorized(config, req, res, decodedToken, productOnly)) {
             req.token = decodedToken;
 
             var authClaims = _.omit(decodedToken, PRIVATE_JWT_VALUES);

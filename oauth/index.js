@@ -6,7 +6,7 @@ var rs = require('jsrsasign');
 var fs = require('fs');
 var path = require('path');
 const memoredpath = '../third_party/memored/index';
-const checkIfAuthorized =require('../lib/validateResourcePath');
+const checkIfAuthorizedLib = require('../lib/validateResourcePath');
 var sharedMemoryCache = require(memoredpath);
 
 //creating aliases for apiKeyCache and validTokenCache for readability
@@ -42,7 +42,7 @@ var tokenCacheSize = 100;
 let oauthConfigObj = null;
 
 module.exports.init = function(config, logger, stats) {
-
+    const checkIfAuthorized = checkIfAuthorizedLib(logger, LOG_TAG_COMP, debug);
     if ( config === undefined || !config ) return(undefined);
 
     oauthConfigObj = config;
@@ -339,7 +339,7 @@ module.exports.init = function(config, logger, stats) {
     };
 
     function authorize(req, res, next, logger, stats, decodedToken, apiKey) {
-        if (checkIfAuthorized(config, req, res, decodedToken, productOnly, logger, LOG_TAG_COMP)) {
+        if (checkIfAuthorized(config, req, res, decodedToken, productOnly)) {
             req.token = decodedToken;
 
             var authClaims = _.omit(decodedToken, PRIVATE_JWT_VALUES);

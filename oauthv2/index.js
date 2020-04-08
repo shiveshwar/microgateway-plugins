@@ -4,7 +4,7 @@ var debug = require('debug')('plugin:oauthv2');
 var url = require('url');
 var rs = require('jsrsasign');
 const memoredpath = '../third_party/memored/index';
-const checkIfAuthorized =require('../lib/validateResourcePath');
+const checkIfAuthorizedLib = require('../lib/validateResourcePath');
 var map = require(memoredpath);
 var JWS = rs.jws.JWS;
 //var requestLib = require('request');
@@ -29,7 +29,7 @@ map.setup({
 var tokenCacheSize = 100;
 
 module.exports.init = function(config, logger, stats) {
-
+    const checkIfAuthorized = checkIfAuthorizedLib(logger, LOG_TAG_COMP, debug);
     if (config === undefined || !config) return (undefined);
     
     //var request = config.request ? requestLib.defaults(config.request) : requestLib;
@@ -171,7 +171,7 @@ module.exports.init = function(config, logger, stats) {
     };
 
     function authorize(req, res, next, logger, stats, decodedToken) {
-        if (checkIfAuthorized(config, req, res, decodedToken, productOnly, logger, LOG_TAG_COMP)) {
+        if (checkIfAuthorized(config, req, res, decodedToken, productOnly)) {
             req.token = decodedToken;
             var authClaims = _.omit(decodedToken, PRIVATE_JWT_VALUES);
             req.headers['x-authorization-claims'] = new Buffer(JSON.stringify(authClaims)).toString('base64');

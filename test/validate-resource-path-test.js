@@ -1,4 +1,4 @@
-const checkIfAuthorized = require('../lib/validateResourcePath');
+const checkIfAuthorizedLib = require('../lib/validateResourcePath');
 const assert = require('assert');
 const denv = require('dotenv');
 
@@ -8,6 +8,7 @@ const coreObject = require('./microgateway-core');
 const logger = coreObject.logger;
 
 const apiProd = 'edgemicro_weather';
+const checkIfAuthorized = checkIfAuthorizedLib(logger);
 const apiName = 'weather';
 const proxy = { name: apiProd, base_path: '/v1/weatheer' }
 const token = { api_product_list: [apiName] }
