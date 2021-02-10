@@ -35,6 +35,9 @@ module.exports.init = function(config, logger, stats) {
 
     var request = config.request ? requestLib.defaults(config.request) : requestLib;
     var keys = config.jwk_keys ? JSON.parse(config.jwk_keys) : null;
+    let failopenGraceInterval = 0;
+    let isFailOpen = false;
+    let gracePeriod = 0;
 
     var middleware = function(req, res, next) {
 
@@ -47,7 +50,7 @@ module.exports.init = function(config, logger, stats) {
 		//cache api keys
         cacheKey = config.hasOwnProperty("cacheKey") ? config.cacheKey : false;
         //set grace period
-        var gracePeriod = config.hasOwnProperty("gracePeriod") ? config.gracePeriod : 0;
+        gracePeriod = config.hasOwnProperty("gracePeriod") ? config.gracePeriod : 0;
         acceptField.gracePeriod = gracePeriod;
         //store api keys here
         var apiKey;
@@ -57,6 +60,9 @@ module.exports.init = function(config, logger, stats) {
         if (process.env.EDGEMICRO_LOCAL_PROXY === "1") {
             productOnly = true;
         }        
+
+        failopenGraceInterval = config.hasOwnProperty('failopenGraceInterval') ? config.failopenGraceInterval : 0;
+        isFailOpen = config.hasOwnProperty('failOpen') ? config.failOpen : false;
 
         //leaving rest of the code same to ensure backward compatibility
         apiKey = req.headers[apiKeyHeaderName]
@@ -86,9 +92,14 @@ module.exports.init = function(config, logger, stats) {
                         debug("api key cache hit", apiKey);
                         return authorize(req, res, next, logger, stats, value);
                     } else {
-                        cache.remove(apiKey);
-                        debug("api key cache expired", apiKey);
-                        requestApiKeyJWT(req, res, next, config, logger, stats, middleware, apiKey);
+                        if ( isFailOpen === true  && failopenGraceInterval ) {
+                            debug('api key expired, using failopen', apiKey);
+                            requestApiKeyJWT(req, res, next, config, logger, stats, middleware, apiKey, value);
+                        } else {
+                            cache.remove(apiKey);
+                            debug("api key cache expired", apiKey);
+                            requestApiKeyJWT(req, res, next, config, logger, stats, middleware, apiKey);
+                        }
                     }
                 } else {
                     debug("api key cache miss", apiKey);
@@ -101,7 +112,7 @@ module.exports.init = function(config, logger, stats) {
 
     }
 
-    function requestApiKeyJWT(req, res, next, config, logger, stats, middleware, apiKey) {
+    function requestApiKeyJWT(req, res, next, config, logger, stats, middleware, apiKey, oldToken) {
 
         if (!config.verify_api_key_url) return sendError(req, res, next, logger, stats, "invalid_request", "API Key Verification URL not configured");
 
@@ -152,6 +163,27 @@ module.exports.init = function(config, logger, stats) {
         }
         debug(api_key_options);
         request(api_key_options, function(err, response, body) {
+
+            if ( !err && !response)  {
+                debug('empty response received from verify apikey call');
+                return sendError(req, res, next, logger, stats, 'internal_server_error', 'empty response received');
+            }
+
+            if ( isFailOpen === true &&  oldToken ) {
+                if ( err || parseInt(response.statusCode/100) === 5 ) {
+                    if ( Date.now() / 1000 < ( oldToken.exp + ( gracePeriod + failopenGraceInterval )*1000 ) ) { // cache should have been expired but adding manual handling
+                        debug('failed-open set to true for apiKey: %s',apiKey);
+                        logger.eventLog({level:'warn', req: req, res: res, err:null, component:LOG_TAG_COMP }, "failed-open set to true due for apiKey:"+apiKey);
+                        return authorize(req, res, next, logger, stats, oldToken); // use old token for failopenGraceInterval if 5XX
+                    } else {
+                        debug('not failing open as fail open grace time has expired for apiKey: %s', apiKey);
+                    }
+                } else {
+                    // api response is non 5XX, so dont failopen, remove expired token from cache
+                    cache.remove(apiKey);
+                }
+            }
+
             if (err) {
                 debug("verify apikey gateway timeout");
                 return sendError(req, res, next, logger, stats, "gateway_timeout", err.message);
