@@ -35,7 +35,7 @@ module.exports.init = function(config, logger, stats) {
 
     var request = config.request ? requestLib.defaults(config.request) : requestLib;
     var keys = config.jwk_keys ? JSON.parse(config.jwk_keys) : null;
-
+    let gracePeriod = 0;
     var middleware = function(req, res, next) {
 
         if (!req || !res) return (-1); // need to check bad args 
@@ -47,7 +47,7 @@ module.exports.init = function(config, logger, stats) {
 		//cache api keys
         cacheKey = config.hasOwnProperty("cacheKey") ? config.cacheKey : false;
         //set grace period
-        var gracePeriod = config.hasOwnProperty("gracePeriod") ? config.gracePeriod : 0;
+        gracePeriod = config.hasOwnProperty("gracePeriod") ? config.gracePeriod : 0;
         acceptField.gracePeriod = gracePeriod;
         //store api keys here
         var apiKey;
@@ -82,7 +82,7 @@ module.exports.init = function(config, logger, stats) {
         if (cacheKey || (cacheControl && cacheControl.indexOf("no-cache") < 0)) { // caching is allowed
             cache.read(apiKey, function(err, value) {
                 if (value) {
-                    if (Date.now() / 1000 < value.exp) { // not expired yet (token expiration is in seconds)
+                    if (Date.now() / 1000 <  value.exp + gracePeriod * 1000) { // not expired yet (token expiration is in seconds)
                         debug("api key cache hit", apiKey);
                         return authorize(req, res, next, logger, stats, value);
                     } else {
